@@ -46,7 +46,8 @@ rule all: ##modify rule all when everything is ready!!
     config["Outputs"]["models"],
     config["Outputs"]["junctions"]
   log:
-    logs_dir + str(date) + ".rule_all.log"
+    logs_dir + str(date) + ".rule_all.out",
+    logs_dir + str(date) + ".rule_all.err",
 
 stringtie = config["Parameters"]["stringtiePath"]
 
@@ -65,7 +66,8 @@ if illumina_files != None:
     params:
       nbit= config["Illumina"]["nbit"]
     log:
-      logs_dir + str(date) + ".star_index.log"
+      logs_dir + str(date) + ".star_index.out",
+      logs_dir + str(date) + ".star_index.err",
     shell:
       "mkdir -p {output.genomedir};"
       "module purge;module load gcc/6.3.0;module load STAR/2.7.2a;"
@@ -88,7 +90,8 @@ if illumina_files != None:
       threads:
         config["Parameters"]["starCores"]
       log:
-        logs_dir + str(date) + ".{file}.star.log"
+        logs_dir + str(date) + ".{file}.star.out",
+        logs_dir + str(date) + ".{file}.star.err",
       shell:
         "mkdir -p {params.stardir};"
         "module purge;module load gcc/6.3.0;module load STAR/2.7.2a;"
@@ -111,7 +114,8 @@ if illumina_files != None:
       threads:
         config["Parameters"]["starCores"]
       log:
-        logs_dir + str(date) + ".{file}.star.log"
+        logs_dir + str(date) + ".{file}.star.out",
+        logs_dir + str(date) + ".{file}.star.err",
       shell:
         "mkdir -p {params.stardir};"
         "module purge;module load gcc/6.3.0;module load STAR/2.7.2a;"
@@ -137,7 +141,8 @@ if cDNA_files != None:
       basename = "{cdnafile}",
       stringtie_opts = stringtie_opts
     log:
-        logs_dir + str(date) + ".{cdnafile}.minimap2_cDNA.log"
+        logs_dir + str(date) + ".{cdnafile}.minimap2_cDNA.out",
+        logs_dir + str(date) + ".{cdnafile}.minimap2_cDNA.err",
     threads: config["Parameters"]["minimapCores"]
     shell:
       "module purge;"
@@ -164,7 +169,8 @@ if dRNA_files != None:
       basename = "{drnafile}",
       stringtie_opts = stringtie_opts
     log:
-        logs_dir + str(date) + ".{drnafile}.minimap2_dRNA.log"
+        logs_dir + str(date) + ".{drnafile}.minimap2_dRNA.out",
+        logs_dir + str(date) + ".{drnafile}.minimap2_dRNA.err"
     threads: config["Parameters"]["minimapCores"]
     shell:
       "module purge;"
@@ -189,10 +195,11 @@ rule join_RNAseq:
     TACO_opts = config["Parameters"]["TACO_opts"],
     outdir = config["Outputs"]["TACO_dir"]
   log:
-    logs_dir + str(date) + ".joinRNAseq.log"
+    logs_dir + str(date) + ".joinRNAseq.out",
+    logs_dir + str(date) + ".joinRNAseq.err",
   threads: config["Parameters"]["TACOCores"]
   run:
-    if illumina_files != None:
+    if illumina_files != None and not os.path.exists("TACO_illumina/assembly.FPKM.gtf"):
       models = expand(config["Illumina"]["star_dir"] + "{file}" + ".stringtie.gtf", file=illumina_files.split(','))
       shell(
         "module purge; module load PYTHON/2.7.5;"
@@ -240,7 +247,7 @@ rule join_RNAseq:
         "ln -s {models} {output.joined_models};"
       )
     shell(
-      "module purge; module load CONDA/4.5.11_PYTHON3; conda activate /scratch/project/devel/aateam/src/portcullis;"
+      "module purge;conda activate /scratch/project/devel/aateam/src/portcullis;"
       "portcullis full --intron_gff -t {threads} {input.genome} {input.bams};"
       "conda deactivate;"
     )
