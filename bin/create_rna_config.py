@@ -17,7 +17,7 @@ class CreateConfigurationFile(object):
         #GENERAL PARAMETERS
         self.configFile = "RNAseq.config"             #Name of the json configuration file with the pipeline parameters to be created
         self.logs_dir = "logs"                        #Directory to keep all the log files        
-        self.stringtiePath = "/scratch/project/devel/aateam/src/Stringtie2/stringtie-2.1.4/stringtie"
+        self.stringtiePath = "/scratch/project/devel/aateam/src/STRINGTIE/stringtie_v2_2_0/stringtie"
         self.starCores = 4
         self.minimapCores = 4
         self.portcullisCores = 4
@@ -34,7 +34,7 @@ class CreateConfigurationFile(object):
         #OUTPUT PARAMETERS
         self.models = "TACO_assembled.gtf"             #Final file with the TACO results
         self.TACO_dir = "TACO_output"                  #Directory to run TACO
-        self.junctions = "portcullis_out/3-filt/portcullis_filtered.pass.junctions.intron.gff3"          #Final file with the junctions
+        self.junctions = "alljunctions.final.gff3"     #Final file with the junctions
 
         #ILLUMINA
         self.genome_dir = "genome"                    #Directory for the genome index   
@@ -244,13 +244,13 @@ class CreateConfigurationFile(object):
         if args.illumina_fastqs == None and args.illumina_dir != None:
             for r, d, f in os.walk(args.illumina_dir):
                 for file in f:
-                    if re.search('1.fastq.gz', file):
+                    if args.PE == True and re.search('.1.fastq.gz', file):
                         a = file.replace('.1.fastq.gz','')
                         if args.illumina_fastqs == None:
                             args.illumina_fastqs = a
                         else:
                             args.illumina_fastqs += "," + a
-                    elif args.PE == "False" and re.search('fastq.gz', file):
+                    elif args.PE == False and re.search('fastq.gz', file):
                         a = file.replace('.fastq.gz','')
                         if args.illumina_fastqs == None:
                             args.illumina_fastqs = a

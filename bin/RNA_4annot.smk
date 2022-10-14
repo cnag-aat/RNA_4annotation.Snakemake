@@ -249,5 +249,6 @@ rule join_RNAseq:
     shell(
       "module purge;conda activate /scratch/project/devel/aateam/src/portcullis;"
       "portcullis full --intron_gff -t {threads} {input.genome} {input.bams};"
+      "gawk \'$7!=\"?\"\' portcullis_out/3-filt/portcullis_filtered.pass.junctions.intron.gff3 > {output.junctions};"
       "conda deactivate;"
     )
