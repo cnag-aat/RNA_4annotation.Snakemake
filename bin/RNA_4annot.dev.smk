@@ -5,13 +5,13 @@ date = datetime.now().strftime('%Y%m%d.%H%M%S')
 module align_reads_workflow:
   snakefile: "../modules/align_reads.smk"
 module get_models_workflow:
-  snakefile: "../modules/get_models.smk"
+  snakefile: "../modules/get_models.dev.smk"
 
 logs_dir = config["Parameters"]["logs_dir"]
 if not os.path.exists(logs_dir):
     os.makedirs(logs_dir)
 
-base = os.path.basename(config["Inputs"]["genome"])
+name = os.path.basename(config["Inputs"]["genome"])
 
 # file wildcards 
 illumina_files = config["Wildcards"]["illumina_fastqs"]
@@ -57,7 +57,7 @@ rule all:
     outputs,
     model_outputs,
     config["Outputs"]["models"],
-    config["Outputs"]["junctions"]
+   # config["Outputs"]["junctions"]
   log:
     logs_dir + str(date) + ".rule_all.out",
     logs_dir + str(date) + ".rule_all.err",
@@ -67,6 +67,7 @@ stringtie_in = {}
 minimap_in = {}
 extensions = {}
 minimap_opts = {}
+taco_bam_in = {}
 taco_models_in = {}
 taco_opts = {}
 
@@ -74,11 +75,13 @@ taco_models_in[config["Outputs"]["TACO_dir"]] = []
 taco_opts[config["Outputs"]["TACO_dir"]] = config["Parameters"]["TACO_opts"]
 
 if illumina_files != None:
+  taco_bam_in[config["Illumina"]["star_dir"]] = []
   taco_models_in[config["Illumina"]["star_dir"]] = []
-  taco_models_in[config["Outputs"]["TACO_dir"]].append(config["Illumina"]["star_dir"] + "TACO_assembled.gtf")
+  taco_models_in[config["Outputs"]["TACO_dir"]].append(config["Illumina"]["star_dir"] + "TACO_output/TACO_assembled.gtf")
   for name in illumina_files.split(','):
     stringtie_in[config["Illumina"]["star_dir"] + name + ".stringtie.gtf"] = config["Illumina"]["stringtie_opts"]
     extensions[config["Illumina"]["star_dir"] + name] = "Aligned.sortedByCoord.out.bam"
+    taco_bam_in[config["Illumina"]["star_dir"] ].append(config["Illumina"]["star_dir"] + name + "Aligned.sortedByCoord.out.bam")
     taco_models_in[config["Illumina"]["star_dir"] ].append(config["Illumina"]["star_dir"] + name + ".stringtie.gtf")
   taco_opts[config["Illumina"]["star_dir"]] = config["Illumina"]["TACO_opts"]
   if not os.path.exists(config["Illumina"]["star_dir"] + "/logs"):
@@ -121,34 +124,39 @@ if illumina_files != None:
     threads:  config["Parameters"]["starCores"]
 
 if cDNA_files != None:
+  taco_bam_in[config["cDNA"]["minimap_dir"] ] = []
   taco_models_in[config["cDNA"]["minimap_dir"] ] = []
-  taco_models_in[config["Outputs"]["TACO_dir"]].append(config["cDNA"]["minimap_dir"] + "TACO_assembled.gtf")
+  taco_models_in[config["Outputs"]["TACO_dir"]].append(config["cDNA"]["minimap_dir"] + "TACO_output/TACO_assembled.gtf")
   for name in cDNA_files.split(','):
     stringtie_in[config["cDNA"]["minimap_dir"] + name + ".stringtie.gtf"] = config["cDNA"]["stringtie_opts"]
     extensions[config["cDNA"]["minimap_dir"] + name] = ".sorted.bam"
     minimap_in[config["cDNA"]["minimap_dir"] + name + ".sorted.bam"] = config["Inputs"]["cDNA_Dir"] + name + ".fastq.gz"
     minimap_opts[config["cDNA"]["minimap_dir"] + name] =  config["cDNA"]["minimap2_opts"]
+    taco_bam_in[config["cDNA"]["minimap_dir"]].append(config["cDNA"]["minimap_dir"] + name + ".sorted.bam")
     taco_models_in[config["cDNA"]["minimap_dir"]].append(config["cDNA"]["minimap_dir"] + name + ".stringtie.gtf")
   taco_opts[config["cDNA"]["minimap_dir"] ] = config["cDNA"]["TACO_opts"],
   if not os.path.exists(config["cDNA"]["minimap_dir"] + "/logs"):
     os.makedirs(config["cDNA"]["minimap_dir"] + "/logs")
 
 if dRNA_files != None:
+  taco_bam_in[config["dRNA"]["minimap_dir"] ] = []
   taco_models_in[config["dRNA"]["minimap_dir"] ] = []
-  taco_models_in[config["Outputs"]["TACO_dir"]].append(config["dRNA"]["minimap_dir"] + "TACO_assembled.gtf")
+  taco_models_in[config["Outputs"]["TACO_dir"]].append(config["dRNA"]["minimap_dir"] + "TACO_output/TACO_assembled.gtf")
   for name in dRNA_files.split(','):
     stringtie_in[config["dRNA"]["minimap_dir"] + name + ".stringtie.gtf"] = config["dRNA"]["stringtie_opts"]
     extensions[config["dRNA"]["minimap_dir"] + name] = ".sorted.bam"
     minimap_in[config["dRNA"]["minimap_dir"] + name + ".sorted.bam"] = config["Inputs"]["dRNA_dir"] + name + ".fastq.gz"
     minimap_opts[config["dRNA"]["minimap_dir"] + name] =  config["dRNA"]["minimap2_opts"]
+    taco_bam_in[config["dRNA"]["minimap_dir"]].append(config["dRNA"]["minimap_dir"] + name + ".sorted.bam")
     taco_models_in[config["dRNA"]["minimap_dir"]].append(config["dRNA"]["minimap_dir"] + name + ".stringtie.gtf")
   taco_opts[config["dRNA"]["minimap_dir"] ] = config["dRNA"]["TACO_opts"],
   if not os.path.exists(config["dRNA"]["minimap_dir"] + "/logs"):
     os.makedirs(config["dRNA"]["minimap_dir"] + "/logs")
 
 if pb_fasta_files != None or pb_files != None:
+  taco_bam_in[config["Isoseq"]["minimap_dir"]] = []
   taco_models_in[config["Isoseq"]["minimap_dir"]] = []
-  taco_models_in[config["Outputs"]["TACO_dir"]].append(config["Isoseq"]["minimap_dir"] + "TACO_assembled.gtf")
+  taco_models_in[config["Outputs"]["TACO_dir"]].append(config["Isoseq"]["minimap_dir"] + "TACO_output/TACO_assembled.gtf")
 
 if pb_files != None:
   for name in pb_files.split(','):
@@ -156,6 +164,7 @@ if pb_files != None:
     extensions[config["Isoseq"]["minimap_dir"] + name] = ".sorted.bam"
     minimap_in[config["Isoseq"]["minimap_dir"] + name + ".sorted.bam"] = config["Inputs"]["PB_dir"] + name + ".fastq.gz"
     minimap_opts[config["Isoseq"]["minimap_dir"] + name] =  config["Isoseq"]["minimap2_opts"]
+    taco_bam_in[config["Isoseq"]["minimap_dir"]].append(config["Isoseq"]["minimap_dir"] + name + ".sorted.bam")
     taco_models_in[config["Isoseq"]["minimap_dir"]].append(config["Isoseq"]["minimap_dir"] + name + ".stringtie.gtf")
   taco_opts[config["Isoseq"]["minimap_dir"]] = config["Isoseq"]["TACO_opts"],
   if not os.path.exists(config["Isoseq"]["minimap_dir"] + "/logs"):
@@ -167,6 +176,7 @@ if pb_fasta_files != None:
     extensions[config["Isoseq"]["minimap_dir"] + name] = ".sorted.bam"
     minimap_in[config["Isoseq"]["minimap_dir"] + name + ".sorted.bam"] = config["Inputs"]["PB_dir"] + name + ".fasta"
     minimap_opts[config["Isoseq"]["minimap_dir"] + name] =  config["Isoseq"]["minimap2_opts"]
+    taco_bam_in[config["Isoseq"]["minimap_dir"]].append(config["Isoseq"]["minimap_dir"] + name + ".sorted.bam")
     taco_models_in[config["Isoseq"]["minimap_dir"]].append(config["Isoseq"]["minimap_dir"] + name + ".stringtie.gtf")
   taco_opts[config["Isoseq"]["minimap_dir"]] = config["Isoseq"]["TACO_opts"],
   if not os.path.exists(config["Isoseq"]["minimap_dir"] + "/logs"):
@@ -182,10 +192,10 @@ use rule minimap2 from align_reads_workflow with:
     basename = "{file}",
     minimap_opts = lambda wildcards:  minimap_opts[wildcards.dir + "/" + wildcards.file]
   log:
-    "{dir}/logs/" + str(date) + ".{file}.minimap2_pb.j%j.out",
-    "{dir}/logs/" + str(date) + ".{file}.minimap2_pb.j%j.err"
+    "{dir}/logs" + str(date) + ".{file}.minimap2_pb.j%j.out",
+    "{dir}/logs" + str(date) + ".{file}.minimap2_pb.j%j.err"
   benchmark:
-    "{dir}/logs/" + str(date) + ".{file}.minimap2_pb.benchmark.txt",
+    "{dir}/logs" + str(date) + ".{file}.minimap2_pb.benchmark.txt",
   conda:
     "../envs/minimap2.24.yaml"    
   threads: config["Parameters"]["minimapCores"]
@@ -211,9 +221,10 @@ use rule stringtie from get_models_workflow with:
 use rule join_models from get_models_workflow with:
   input:
     genome = config["Inputs"]["genome"],
+   # bams = lambda wildcards: taco_bam_in[wildcards.dir],
     models = lambda wildcards: taco_models_in[wildcards.dir]
   output:
-    joined_models = "{dir}TACO_assembled.gtf",
+    joined_models = "{dir}TACO_output/TACO_assembled.gtf",
   params:
     TACO_opts = lambda wildcards: taco_opts[wildcards.dir],
     outdir = "{dir}"
@@ -226,20 +237,4 @@ use rule join_models from get_models_workflow with:
     "{dir}logs/" + str(date) + ".TACO.benchmark.txt",
   conda:
     "../envs/taco0.7.3.yaml"
-
-use rule portcullis from get_models_workflow with:
-  input:
-    genome = config["Inputs"]["genome"],
-    bams =  bams_list
-  output:
-    junctions = config["Outputs"]["junctions"]
-  threads: 
-    config["Parameters"]["PortcullisCores"]
-  log:
-    logs_dir + str(date) + ".portcullis.j%j.out",
-    logs_dir + str(date) + ".portcullis.j%j.err",
-  benchmark:
-    logs_dir + str(date) + ".portcullis.benchmark.txt",
-  conda:
-    "../envs/portcullis1.2.4.yaml"
   
