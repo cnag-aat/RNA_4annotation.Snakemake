@@ -43,3 +43,24 @@ rule portcullis:
   shell:
     "portcullis full --intron_gff -t {threads} {input.genome} {input.bams};"
     "gawk \'$7!=\"?\"\' portcullis_out/3-filt/portcullis_filtered.pass.junctions.intron.gff3 > {output.junctions};"
+
+rule ESPRESSO:
+  input:
+    genome = "assembly.fa",
+    sams =  "star/readsAligned.sortedByCoord.out.sam",
+    tsv = "samples.tsv"
+  output:
+    junctions = "junctions.gff",
+  params:
+    ESPRESSO_path = "/software/assembly/src/ESPRESSO/espresso_v_1_3_0_beta/src/",
+    out_dir = "ESPRESSO_out"
+  threads: 4
+  conda:
+    "../envs/ESPRESSO1.3.0.yaml"
+  shell:
+    "perl {params.ESPRESSO_path}ESPRESSO_S.pl -L {input.tsv} -F {input.genome} -O {params.out_dir} -T {threads};"
+    "grep -v SJ_cluster {params.out_dir}/other_SJ_simplified.list | gawk \'$5==0 || $5==1\' | " +\
+    " perl -ane \'chomp; @scaff = split /\:/, $F[1]; $start = $F[2] + 1; $freq=$F[5]+1; " +\
+    " if ($F[4] == 0){{$strand = \"+\"}}else {{$strand=\"-\"}};print " +\
+    "\"$scaff[0]\tESPRESSO\tintron\t$start\t$F[3]\t$freq\t$strand\t.\tgrp=$F[0];src=E\n\";\' > {output.junctions};"
+    "rm {input.sams};"

@@ -14,9 +14,10 @@ rule star_index:
       nbit= 18
     conda:
       "../envs/star2.7.10a.yaml"
+    threads: 8
     shell:
       "mkdir -p {output.genomedir};"
-      "STAR --runMode genomeGenerate --genomeDir {output.genomedir} --genomeFastaFiles {input.genome} --genomeChrBinNbits {params.nbit};"
+      "STAR --runMode genomeGenerate --genomeDir {output.genomedir} --runThreadN {threads}  --genomeFastaFiles {input.genome} --genomeChrBinNbits {params.nbit};"
       "touch {output.ok};"
 
 rule star:
@@ -28,13 +29,14 @@ rule star:
   params:
     stardir = "star",
     basename = "reads",
+    additional = ""
   conda:
     "../envs/star2.7.10a.yaml"
   threads: 4
   shell:
     "mkdir -p {params.stardir};"
     "cd {params.stardir};"
-    "STAR --genomeDir {input.genomedir} --readFilesIn {input.reads} --readFilesCommand zcat --runThreadN {threads} --outFileNamePrefix {params.basename} --outSAMstrandField intronMotif --outSAMtype BAM SortedByCoordinate --outSAMattrIHstart 0 --outFilterIntronMotifs RemoveNoncanonical;"
+    "STAR --genomeDir {input.genomedir} --readFilesIn {input.reads} --readFilesCommand zcat --runThreadN {threads} --outFileNamePrefix {params.basename} --outSAMstrandField intronMotif --outSAMtype BAM SortedByCoordinate --outSAMattrIHstart 0 --outFilterIntronMotifs RemoveNoncanonical {params.additional};"
     "echo 'STAR run completed.';"
 
 rule minimap2:
@@ -53,3 +55,14 @@ rule minimap2:
     "minimap2 -x splice{params.minimap_opts} -t {threads} -a {input.genome} {input.reads} |  samtools sort -@ {threads}  -O BAM -o {output.bam};"
     "samtools index {output.bam};"
     "echo 'MINIMAP2 run completed.';"
+
+rule bam2sam:
+  input:
+    bam = "cDNA/cdna_reads.sorted.bam"
+  output:
+    sam = "cDNA/cdna_reads.sorted.sam"
+  conda:
+    "../envs/ESPRESSO1.3.0.yaml"
+  threads: 12
+  shell:
+    "samtools view -@{threads} {input.bam} > {output.sam}; "
