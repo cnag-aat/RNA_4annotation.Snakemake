@@ -38,6 +38,7 @@ class CreateConfigurationFile(object):
         self.models = "TACO_assembled.gtf"             #Final file with the TACO results
         self.TACO_dir = os.getcwd() + "/"                  #Directory to run TACO
         self.junctions = "alljunctions.final.gff3"     #Final file with the junctions
+        self.jbrowse_dir = os.getcwd() + "/../jbrowse/RNAseq" 
 
         #ILLUMINA
         self.genome_dir = "genome"                    #Directory for the genome index   
@@ -155,7 +156,8 @@ class CreateConfigurationFile(object):
         output_group.add_argument('--gtf-models', dest="models", metavar="models", default=self.models, help='Path to the final stringtie gtf. Default %s' % self.models)
         output_group.add_argument('--TACO-dir', dest="TACO_dir", metavar="TACO_dir", default=self.TACO_dir, help='Directory to tun TACO. Default %s' % self.TACO_dir)
         output_group.add_argument('--junctions', dest="junctions", metavar="junctions", default=self.junctions, help='Path to the final junctions file. Default %s' % self.junctions)
-
+        output_group.add_argument('--jbrowse-dir', dest="jbrowse_dir", metavar="jbrowse_dir", default=self.jbrowse_dir, help='Directory to place the jbrowse tracks. Default %s' % self.jbrowse_dir)
+        
     def register_illumina(self, parser):
         """Register all the illumina  parameters with the given
         argparse parser
@@ -286,6 +288,11 @@ class CreateConfigurationFile(object):
         else:
             args.star_dir = working_dir + self.star_dir + "/"
 
+        if args.jbrowse_dir:
+            args.jbrowse_dir = os.path.abspath(args.jbrowse_dir) + "/"
+        else:
+            args.jbrowse_dir = self.jbrowse_dir + "/"
+
         if args.cdna_minimap_dir:
             args.cdna_minimap_dir = os.path.abspath(args.cdna_minimap_dir) + "/"
         else:
@@ -355,7 +362,7 @@ class CreateConfigurationFile(object):
                             args.cDNA_fastqs = a
                         else:
                             args.cDNA_fastqs += "," + a
-                        samples.append(args.cdna_minimap_dir + a + ".sam\t" + a)
+                        samples.append(args.cdna_minimap_dir + a + ".sorted.sam\t" + a)
 
         if args.dRNA_fastqs == None and args.dRNA_dir != None:
             for r, d, f in os.walk(args.dRNA_dir):
@@ -366,7 +373,7 @@ class CreateConfigurationFile(object):
                             args.dRNA_fastqs = a
                         else:
                             args.dRNA_fastqs += "," + a
-                        samples.append(args.drna_minimap_dir + a + ".sam\t" + a)
+                        samples.append(args.drna_minimap_dir + a + ".sorted.sam\t" + a)
 
         if args.pb_fastqs == None and args.pb_dir != None:
             for r, d, f in os.walk(args.pb_dir):
@@ -377,7 +384,7 @@ class CreateConfigurationFile(object):
                             args.pb_fastqs = a
                         else:
                             args.pb_fastqs += "," + a
-                        samples.append(args.pb_minimap_dir + a + ".sam\t" + a)
+                        samples.append(args.pb_minimap_dir + a + ".sorted.sam\t" + a)
 
         if args.pb_fastas == None and args.pb_dir != None:
             for r, d, f in os.walk(args.pb_dir):
@@ -388,7 +395,7 @@ class CreateConfigurationFile(object):
                             args.pb_fastas = a
                         else:
                             args.pb_fastas += "," + a
-                        samples.append(args.pb_minimap_dir + a + ".sam\t" + a)
+                        samples.append(args.pb_minimap_dir + a + ".sorted.sam\t" + a)
         
         if args.samples_tsv == None:
             args.samples_tsv = working_dir + self.samples_tsv
@@ -440,6 +447,7 @@ class CreateConfigurationFile(object):
         self.outputParameters["models"] = args.models
         self.outputParameters["junctions"] = args.junctions
         self.outputParameters["TACO_dir"] = args.TACO_dir
+        self.outputParameters["jbrowse_dir"] = args.jbrowse_dir
         self.allParameters ["Outputs"] = self.outputParameters
 
     def storeTrimgaloreParameters(self,args):

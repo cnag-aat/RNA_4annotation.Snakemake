@@ -22,7 +22,7 @@ shell.prefix("TMPDIR=" + working_dir + "tmp/; echo tmpdir is set to $TMPDIR;")
 
 base = os.path.basename(config["Inputs"]["genome"])
 
-jbrowse_dir = working_dir + "/../jbrowse/RNAseq/"
+jbrowse_dir = config["Outputs"]["jbrowse_dir"]
 jlogs_dir = jbrowse_dir + "logs/"
 if not os.path.exists(jlogs_dir):
     os.makedirs(jlogs_dir)
@@ -43,27 +43,35 @@ if illumina_files != None:
   sams_list.append(expand(config["Illumina"]["star_dir"] + "{file}" + "Aligned.sortedByCoord.out.sam", file=illumina_files.split(',')),)
   model_outputs.append(expand(config["Illumina"]["star_dir"] + "{file}" + ".stringtie.gtf", file=illumina_files.split(',')),)
   if config["Inputs"]["genome_lengths"]:
-   browser_inputs.append(expand(jbrowse_dir + os.path.basename(os.path.dirname(config["Illumina"]["star_dir"])) + "/{file}" + "Aligned.sortedByCoord.out.bw", file=illumina_files.split(',')),)
+    browser_inputs.append(expand(jbrowse_dir + os.path.basename(os.path.dirname(config["Illumina"]["star_dir"])) + "/{file}" + "Aligned.sortedByCoord.out.bw", file=illumina_files.split(',')),)
 
 if cDNA_files != None:
   outputs.append(expand(config["cDNA"]["minimap_dir"] + "{cdnafile}.sorted.bam", cdnafile=cDNA_files.split(',')),)
   sams_list.append(expand(config["cDNA"]["minimap_dir"] + "{cdnafile}" + ".sorted.sam", cdnafile=cDNA_files.split(',')),)
   model_outputs.append(expand(config["cDNA"]["minimap_dir"] + "{cdnafile}" + ".stringtie.gtf", cdnafile=cDNA_files.split(',')),)
+  if config["Inputs"]["genome_lengths"]:
+    browser_inputs.append(expand(jbrowse_dir + os.path.basename(os.path.dirname(config["cDNA"]["minimap_dir"])) + "/{cdnafile}" + ".sorted.bw", cdnafile=cDNA_files.split(',')),)
 
 if dRNA_files != None:
   outputs.append(expand(config["dRNA"]["minimap_dir"] + "{drnafile}.sorted.bam", drnafile=dRNA_files.split(',')),)
   sams_list.append(expand(config["dRNA"]["minimap_dir"] + "{drnafile}.sorted.sam", drnafile=dRNA_files.split(',')),)
   model_outputs.append(expand(config["dRNA"]["minimap_dir"] + "{drnafile}" + ".stringtie.gtf", drnafile=dRNA_files.split(',')),)
+  if config["Inputs"]["genome_lengths"]:
+    browser_inputs.append(expand(jbrowse_dir + os.path.basename(os.path.dirname(config["dRNA"]["minimap_dir"])) + "/{drnafile}" + ".sorted.bw", drnafile=dRNA_files.split(',')),)
 
 if pb_files != None:
   outputs.append(expand(config["Isoseq"]["minimap_dir"] + "{pbfile}.sorted.bam", pbfile=pb_files.split(',')),)
   sams_list.append(expand(config["Isoseq"]["minimap_dir"] + "{pbfile}.sorted.sam", pbfile=pb_files.split(',')),)
   model_outputs.append(expand(config["Isoseq"]["minimap_dir"] + "{pbfile}" + ".stringtie.gtf", pbfile=pb_files.split(',')),)
+  if config["Inputs"]["genome_lengths"]:
+    browser_inputs.append(expand(jbrowse_dir + os.path.basename(os.path.dirname(config["Isoseq"]["minimap_dir"])) + "/{pbfile}" + ".sorted.bw", pbfile=pb_files.split(',')),)
 
 if pb_fasta_files != None:
   outputs.append(expand(config["Isoseq"]["minimap_dir"] + "{pbfile}.sorted.bam", pbfile=pb_fasta_files.split(',')),)
   sams_list.append(expand(config["Isoseq"]["minimap_dir"] + "{pbfile}.sorted.sam", pbfile=pb_fasta_files.split(',')),)
   model_outputs.append(expand(config["Isoseq"]["minimap_dir"] + "{pbfile}" + ".stringtie.gtf", pbfile=pb_fasta_files.split(',')),)
+  if config["Inputs"]["genome_lengths"]:
+    browser_inputs.append(expand(jbrowse_dir + os.path.basename(os.path.dirname(config["Isoseq"]["minimap_dir"])) + "/{pbfile}" + ".sorted.bw", pbfile=pb_fasta_files.split(',')),)
 
 # bams_list = outputs
 
@@ -320,12 +328,10 @@ use rule ESPRESSO from get_models_workflow with:
 use rule get_bw from jbrowse_workflow with:
   input:
     bam = working_dir + "/{dir}/{sample}.bam",
-    #glen = config["Inputs"]["genome_lengths"]
-    glen = "../genome/Ateles_hybridus_ORGONE_01_polished.formatted.genome"
+    glen = config["Inputs"]["genome_lengths"]
   output:
      bg = jbrowse_dir + "{dir}/{sample}.bg",
      bw = jbrowse_dir + "{dir}/{sample}.bw"
-    #bw ="test.bw"
   params:
     opt = " -split "
   log:
